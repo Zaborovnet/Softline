@@ -1,11 +1,15 @@
 #include "monitorthread.h"
-
+#include "QDebug"
 
 
 MonitorThread::MonitorThread(QObject *parent)
   : QThread(parent)
 {
-  _stop_b = true;
+  qRegisterMetaType <QList<FileInfo>> ("QList<FileInfo>");
+  qRegisterMetaType <size_t> ("size_t");
+  qRegisterMetaType <QString> ("QString");
+
+  _stop_b = false;
 }
 
 MonitorThread::~MonitorThread()
@@ -22,17 +26,21 @@ void MonitorThread::setQuota(size_t quotaBytes_i) {
 }
 
 void MonitorThread::startWatch() {
-  _stop_b = false;
+  // _stop_b = false;
+  // qDebug() << "start";
 }
 
-void MonitorThread::stop() {
+void MonitorThread::stopWatch() {
   _stop_b = true;
+  qDebug() << "stop";
 }
 
 void MonitorThread::run() {
+  qDebug() << "run";
   while (!_stop_b) {
     if (_dir_str.isEmpty()) {
-      QThread::sleep(1000); // Повторная проверка через 1 секунду (на пустоту директории)
+      QThread::sleep(1); // Повторная проверка через 1 секунду (на пустоту директории)
+      qDebug() << "Dir is empty";
       continue;
     }
 
@@ -48,6 +56,7 @@ void MonitorThread::run() {
                   return FirstFile_o.lastModified_o < SecondFile_o.lastModified_o;
                 });
 
+      // Если список файлов не пустой и общий размер превышает квоту, то запускаем очистку
       while (!files_lst.isEmpty() && totalSize_i > _quota_i) {
         const FileInfo oldest_o = files_lst.first();
         QFile file_o(oldest_o.filePath_str);
@@ -63,7 +72,8 @@ void MonitorThread::run() {
     }
 
     emit fileListUpdated(files_lst, totalSize_i);
-    QThread::sleep(1000); //Следующая проверка через 1 секунду
+    QThread::sleep(1); //Следующая проверка через 1 секунду
+
   }
 }
 
@@ -92,6 +102,8 @@ void MonitorThread::scanDirectory(const QString &dirPath_str, QList<FileInfo> &f
       fi_o.lastModified_o = entry.lastModified();
       files_lst.append(fi_o); // Закидываем в список к остальным найденным файлам
       totalSize_i += fi_o.size_i; // Считаеи общий размер
+      qDebug() << fi_o.filePath_str << fi_o.size_i << fi_o.lastModified_o << totalSize_i;
+
     }
   }
 }

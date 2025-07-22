@@ -22,20 +22,18 @@ class MainWindow : public QMainWindow {
   private slots:
   void browseDirectory();
   void updateQuota();
-  void updateFileList(const QList<FileInfo> &files, qint64 totalSize);
-  void handleError(const QString &error);
+  void updateFileList(const QList<FileInfo> &files_lst, size_t totalSize_i);
+  void handleError(const QString &error_str);
 
   private:
-  void start_find();
-  void stop_find();
-  QLineEdit *m_directoryEdit;
-  QLineEdit *m_quotaEdit;
-  QTableWidget *m_fileTable;
-  QLabel *m_statusLabel;
-  MonitorThread *m_monitorThread;
-  qint64 m_quotaBytes = 100 * 1024 * 1024;
+  QLineEdit *_directoryEdit_po;
+  QLineEdit *_quotaEdit_po;
+  QTableWidget *_fileTable_po;
+  QLabel *_statusLabel_po;
+  MonitorThread *_monitorThread_po;
+  size_t _quotaBytes_i;
 
-  QString formatSize(qint64 bytes);
+  QString formatSize_str(size_t bytes_i);
 };
 
 #endif // MAINWINDOW_H

@@ -5,123 +5,105 @@
 MainWindow::MainWindow(QWidget *parent)
   : QMainWindow(parent)
 {
-  QWidget *centralWidget = new QWidget(this);
-  QVBoxLayout *mainLayout = new QVBoxLayout(centralWidget);
+  QWidget *centralWidget_po = new QWidget(this);
+  QVBoxLayout *mainLayout_po = new QVBoxLayout(centralWidget_po);
+
+  _quotaBytes_i = 100 * 1024 * 1024;
 
   // Directory selection
-  QHBoxLayout *dirLayout = new QHBoxLayout();
-  m_directoryEdit = new QLineEdit(this);
-  QPushButton *browseButton = new QPushButton("Browse...", this);
-  dirLayout->addWidget(m_directoryEdit);
-  dirLayout->addWidget(browseButton);
+  QHBoxLayout *dirLayout_po = new QHBoxLayout();
+  _directoryEdit_po = new QLineEdit(this);
+  QPushButton *browseButton_po = new QPushButton("Browse...", this);
+  dirLayout_po->addWidget(_directoryEdit_po);
+  dirLayout_po->addWidget(browseButton_po);
 
   // Quota settings
-  QHBoxLayout *ButtonLayout = new QHBoxLayout();
-  QPushButton *startButton = new QPushButton("Start", this);
-  QPushButton *stopButton = new QPushButton("Stop", this);
-  ButtonLayout->addWidget(startButton);
-  ButtonLayout->addWidget(stopButton);
-
-  // Buttons
-  QHBoxLayout *quotaLayout = new QHBoxLayout();
-  QLabel *quotaLabel = new QLabel("Quota (MB):", this);
-  m_quotaEdit = new QLineEdit("100", this);
-  quotaLayout->addWidget(quotaLabel);
-  quotaLayout->addWidget(m_quotaEdit);
+  QHBoxLayout *quotaLayout_po = new QHBoxLayout();
+  QLabel *quotaLabel_po = new QLabel("Quota (MB):", this);
+  _quotaEdit_po = new QLineEdit("100", this);
+  quotaLayout_po->addWidget(quotaLabel_po);
+  quotaLayout_po->addWidget(_quotaEdit_po);
 
   // File table
-  m_fileTable = new QTableWidget(0, 3, this);
-  m_fileTable->setHorizontalHeaderLabels(QStringList{"Path", "Size", "Last Modified"});
-  m_fileTable->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
+  _fileTable_po = new QTableWidget(0, 3, this);
+  _fileTable_po->setHorizontalHeaderLabels(QStringList{"Path", "Size", "Last Modified"});
+  _fileTable_po->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
 
   // Status bar
-  m_statusLabel = new QLabel("Total: 0 MB, Quota: 100 MB", this);
+  _statusLabel_po = new QLabel("Total: 0 MB, Quota: 100 MB", this);
 
   // Layout setup
-  mainLayout->addLayout(dirLayout);
-  mainLayout->addLayout(quotaLayout);
-  mainLayout->addLayout(ButtonLayout);
-  mainLayout->addWidget(m_fileTable);
-  mainLayout->addWidget(m_statusLabel);
+  mainLayout_po->addLayout(dirLayout_po);
+  mainLayout_po->addLayout(quotaLayout_po);
+  mainLayout_po->addWidget(_fileTable_po);
+  mainLayout_po->addWidget(_statusLabel_po);
 
-  setCentralWidget(centralWidget);
+  setCentralWidget(centralWidget_po);
   resize(800, 600);
 
   // Connections
-  connect(browseButton, &QPushButton::clicked, this, &MainWindow::browseDirectory);
-  connect(m_quotaEdit, &QLineEdit::textChanged, this, &MainWindow::updateQuota);
-
-  connect(startButton, &QPushButton::clicked, this, &MainWindow::start_find);
-  connect(stopButton, &QPushButton::clicked, this, &MainWindow::stop_find);
+  connect(browseButton_po, &QPushButton::clicked, this, &MainWindow::browseDirectory);
+  connect(_quotaEdit_po, &QLineEdit::textChanged, this, &MainWindow::updateQuota);
 
   // Monitor thread
-  m_monitorThread = new MonitorThread(this);
-  connect(m_monitorThread, &MonitorThread::fileListUpdated, this, &MainWindow::updateFileList);
-  connect(m_monitorThread, &MonitorThread::errorOccurred, this, &MainWindow::handleError);
-  m_monitorThread->start();
+  _monitorThread_po = new MonitorThread(this);
+  connect(_monitorThread_po, &MonitorThread::fileListUpdated, this, &MainWindow::updateFileList);
+  connect(_monitorThread_po, &MonitorThread::errorOccurred, this, &MainWindow::handleError);
 
+  _monitorThread_po->start();
 }
 
 MainWindow::~MainWindow() {
-  m_monitorThread->stop();
-  m_monitorThread->wait();
-  delete m_monitorThread;
+  _monitorThread_po->stopWatch();
+  _monitorThread_po->wait();
+  delete _monitorThread_po;
 }
 
 void MainWindow::browseDirectory() {
-  QString dir = QFileDialog::getExistingDirectory(this, "Select Directory");
-  if (!dir.isEmpty()) {
-    m_directoryEdit->setText(dir);
-    m_monitorThread->setDirectory(dir);
+  QString dir_str = QFileDialog::getExistingDirectory(this, "Select Directory");
+  if (!dir_str.isEmpty()) {
+    _directoryEdit_po->setText(dir_str);
+    _monitorThread_po->setDirectory(dir_str);
   }
 }
 
 void MainWindow::updateQuota() {
-  bool ok;
-  double mb = m_quotaEdit->text().toDouble(&ok);
-  if (ok && mb > 0) {
-    m_quotaBytes = static_cast<qint64>(mb * 1024 * 1024);
-    m_monitorThread->setQuota(m_quotaBytes);
-    m_statusLabel->setText(QString("Total: - MB, Quota: %1 MB").arg(mb, 0, 'f', 2));
+  bool ok_b;
+  double mb_d = _quotaEdit_po->text().toDouble(&ok_b);
+  if (ok_b && mb_d > 0) {
+    _quotaBytes_i = static_cast<size_t>(mb_d * 1024 * 1024);
+    _monitorThread_po->setQuota(_quotaBytes_i);
+    _statusLabel_po->setText(QString("Total: - MB, Quota: %1 MB").arg(mb_d, 0, 'f', 2));
   }
 }
 
-void MainWindow::updateFileList(const QList<FileInfo> &files, qint64 totalSize) {
-  m_fileTable->setRowCount(files.size());
+void MainWindow::updateFileList(const QList<FileInfo> &files_lst, size_t totalSize_i) {
+  _fileTable_po->setRowCount(files_lst.size());
 
-  for (int i = 0; i < files.size(); ++i) {
-    const FileInfo &fi = files[i];
-    m_fileTable->setItem(i, 0, new QTableWidgetItem(fi.filePath_str));
-    m_fileTable->setItem(i, 1, new QTableWidgetItem(formatSize(fi.size_i)));
-    m_fileTable->setItem(i, 2, new QTableWidgetItem(fi.lastModified_o.toString("yyyy-MM-dd hh:mm:ss")));
+  for (int i = 0; i < files_lst.size(); ++i) {
+    const FileInfo &fi_ro = files_lst[i];
+    _fileTable_po->setItem(i, 0, new QTableWidgetItem(fi_ro.filePath_str));
+    _fileTable_po->setItem(i, 1, new QTableWidgetItem(formatSize_str(fi_ro.size_i)));
+    _fileTable_po->setItem(i, 2, new QTableWidgetItem(fi_ro.lastModified_o.toString("yyyy-MM-dd hh:mm:ss")));
   }
 
-  double totalMB = totalSize / (1024.0 * 1024.0);
-  double quotaMB = m_quotaBytes / (1024.0 * 1024.0);
-  m_statusLabel->setText(QString("Total: %1 MB, Quota: %2 MB").arg(totalMB, 0, 'f', 2).arg(quotaMB, 0, 'f', 2));
+  double totalMB_d = totalSize_i / (1024.0 * 1024.0);
+  double quotaMB_d = _quotaBytes_i / (1024.0 * 1024.0);
+  _statusLabel_po->setText(QString("Total: %1 MB, Quota: %2 MB").arg(totalMB_d, 0, 'f', 2).arg(quotaMB_d, 0, 'f', 2));
 }
 
-void MainWindow::handleError(const QString &error) {
-  QMessageBox::critical(this, "Error", error);
+void MainWindow::handleError(const QString &error_str) {
+  QMessageBox::critical(this, "Error", error_str);
 }
 
-QString MainWindow::formatSize(qint64 bytes) {
-  constexpr qint64 KB = 1024;
-  constexpr qint64 MB = KB * 1024;
-  constexpr qint64 GB = MB * 1024;
+QString MainWindow::formatSize_str(size_t bytes_i) {
+  constexpr size_t KB_i = 1024;
+  constexpr size_t MB_i = KB_i * 1024;
+  constexpr size_t GB_i = MB_i * 1024;
 
-  if (bytes >= GB) return QString("%1 GB").arg(bytes / static_cast<double>(GB), 0, 'f', 2);
-  if (bytes >= MB) return QString("%1 MB").arg(bytes / static_cast<double>(MB), 0, 'f', 2);
-  if (bytes >= KB) return QString("%1 KB").arg(bytes / static_cast<double>(KB), 0, 'f', 2);
-  return QString("%1 bytes").arg(bytes);
+  if (bytes_i >= GB_i) return QString("%1 GB").arg(bytes_i / static_cast<double>(GB_i), 0, 'f', 2);
+  if (bytes_i >= MB_i) return QString("%1 MB").arg(bytes_i / static_cast<double>(MB_i), 0, 'f', 2);
+  if (bytes_i >= KB_i) return QString("%1 KB").arg(bytes_i / static_cast<double>(KB_i), 0, 'f', 2);
+  return QString("%1 bytes").arg(bytes_i);
 }
 
-void MainWindow::start_find()
-{
-  m_monitorThread->startWatch();
-}
-
-void MainWindow::stop_find()
-{
-  m_monitorThread->stop();
-}

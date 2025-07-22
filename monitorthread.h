@@ -8,7 +8,11 @@
 #include <QDir>
 #include <QDateTime>
 #include <algorithm>
+#include <QMetaType>
 
+Q_DECLARE_METATYPE(QList<QFileInfo>);
+Q_DECLARE_METATYPE(size_t);
+Q_DECLARE_METATYPE(QString);
 
 
 /**
@@ -43,13 +47,13 @@ class MonitorThread : public QThread
    */
   void setQuota(size_t quotaBytes_i);
   /**
-   * @brief Запуск обработчика новых файлов
+   * @brief Запуск обработчика файлов
    */
   void startWatch();
   /**
-   * @brief Остановка обработчика новых файлов
+   * @brief Остановка обработчика файлов
    */
-  void stop();
+  void stopWatch();
 
   protected:
   void run() override;  ///< @brief Переопределённый метод по запуску потока
@@ -63,7 +67,7 @@ class MonitorThread : public QThread
 
   signals:
   void errorOccurred(const QString &error_str);
-  void fileListUpdated(QList<FileInfo> &files_lst, size_t totalSize_i);
+  void fileListUpdated(const QList<FileInfo> &files_lst, size_t totalSize_i);
 };
 
 #endif // MONITORTHREAD_H
