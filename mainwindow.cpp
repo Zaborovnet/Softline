@@ -21,8 +21,10 @@ MainWindow::MainWindow(QWidget *parent)
   QHBoxLayout *quotaLayout_po = new QHBoxLayout();
   QLabel *quotaLabel_po = new QLabel("Quota (MB):", this);
   _quotaEdit_po = new QLineEdit("100", this);
+  QPushButton *acceptQuota_po = new QPushButton("Accept Quota", this);
   quotaLayout_po->addWidget(quotaLabel_po);
   quotaLayout_po->addWidget(_quotaEdit_po);
+  quotaLayout_po->addWidget(acceptQuota_po);
 
   // File table
   _fileTable_po = new QTableWidget(0, 3, this);
@@ -43,7 +45,9 @@ MainWindow::MainWindow(QWidget *parent)
 
   // Connections
   connect(browseButton_po, &QPushButton::clicked, this, &MainWindow::browseDirectory);
-  connect(_quotaEdit_po, &QLineEdit::textChanged, this, &MainWindow::updateQuota);
+  connect(acceptQuota_po, &QPushButton::clicked, this, &MainWindow::updateQuota);
+  // connect(_quotaEdit_po, &QLineEdit::textChanged, this, &MainWindow::updateQuota);
+
 
   // Monitor thread
   _monitorThread_po = new MonitorThread(this);

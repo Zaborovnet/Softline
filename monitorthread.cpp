@@ -10,6 +10,9 @@ MonitorThread::MonitorThread(QObject *parent)
   qRegisterMetaType <QString> ("QString");
 
   _stop_b = false;
+  _quota_i = 0;
+
+  SIZE_MAX;
 }
 
 MonitorThread::~MonitorThread()
@@ -23,6 +26,7 @@ void MonitorThread::setDirectory(const QString &dir_str) {
 
 void MonitorThread::setQuota(size_t quotaBytes_i) {
   _quota_i = quotaBytes_i;
+  qDebug() << "Quota is" << _quota_i;
 }
 
 void MonitorThread::startWatch() {
@@ -44,6 +48,14 @@ void MonitorThread::run() {
       continue;
     }
 
+    if (_quota_i == 0) {
+      QThread::sleep(1); // Повторная проверка через 1 секунду (на пустоту директории)
+      qDebug() << "Quota is't set";
+      continue;
+    }
+
+    qDebug() << "Analyzier run";
+
     QList<FileInfo> files_lst;
     size_t totalSize_i = 0;
 
@@ -57,8 +69,9 @@ void MonitorThread::run() {
                 });
 
       // Если список файлов не пустой и общий размер превышает квоту, то запускаем очистку
-      while (!files_lst.isEmpty() && totalSize_i > _quota_i) {
+      while (totalSize_i > _quota_i) {
         const FileInfo oldest_o = files_lst.first();
+        qDebug() << "Oldest file for remove" << oldest_o.filePath_str;
         QFile file_o(oldest_o.filePath_str);
         if (file_o.remove()) {
           totalSize_i -= oldest_o.size_i;

@@ -10,6 +10,8 @@
 #include <algorithm>
 #include <QMetaType>
 
+
+/** @brief Декларирование типов для передачи */
 Q_DECLARE_METATYPE(QList<QFileInfo>);
 Q_DECLARE_METATYPE(size_t);
 Q_DECLARE_METATYPE(QString);
@@ -26,14 +28,22 @@ struct FileInfo
   QDateTime lastModified_o; ///< @brief Время последней модификации
 };
 
-
-
+/**
+  @brief Класс-мониторинг за файлами/директориями
+*/
 class MonitorThread : public QThread
 {
   Q_OBJECT
 
   public:
+  /**
+   * @brief Конструктор
+   */
   explicit MonitorThread( QObject *parent = nullptr);
+
+  /**
+   * @brief Деструктор
+   */
   ~MonitorThread();
 
   /**
@@ -56,17 +66,27 @@ class MonitorThread : public QThread
   void stopWatch();
 
   protected:
-  void run() override;  ///< @brief Переопределённый метод по запуску потока
+  /**
+   * @brief Переопределённый метод по запуску обропотчика в потоке
+   */
+  void run() override;
 
   private:
   QString _dir_str;    ///< @brief Путь до целевой директории
   size_t _quota_i;     ///< @brief Максимальный размер директории в MB (МегаБайтах)
-  bool _stop_b;       ///< @brief Абсолютный путь до файла
+  bool _stop_b;        ///< @brief Абсолютный путь до файла
 
+  /** @brief Сканирование директории
+   * @param[in] dirPath_str Абсолютный путь до листа с файлами
+   * @param[in] files_lst Лист с файлами
+   * @param[in] totalSize_i Общий объём всех файлов
+   */
   void scanDirectory(const QString &dirPath_str, QList<FileInfo> &files_lst, size_t &totalSize_i);
 
   signals:
-  void errorOccurred(const QString &error_str);
+  /** @brief В случае ошибки отсылаем, что за ошибка*/
+  void errorOccurred(const QString &error_str);    
+  /** @brief Для отсыла листа со всеми файлами в целевой директории, а так же общего размера всех директории*/
   void fileListUpdated(const QList<FileInfo> &files_lst, size_t totalSize_i);
 };
 
